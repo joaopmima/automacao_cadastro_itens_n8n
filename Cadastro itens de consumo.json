@@ -1,0 +1,493 @@
+{
+  "name": "Cadastro itens de consumo",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO CADASTRO_ITEM_FISCAL\n(CODIGO_ITEM, ITEM_DESCRICAO, UNIDADE, INDICADOR_CFOP, CLASSIF_FISCAL)\nVALUES\n('{{ $json['Codigo do item'] }}','{{ $('Edit Fields1').item.json['Nome do item'] }}', 'UN', 13, {{ $('On form submission').item.json['NCM do item '] }})"
+      },
+      "type": "n8n-nodes-base.microsoftSql",
+      "typeVersion": 1.1,
+      "position": [
+        1456,
+        128
+      ],
+      "id": "3d122a97-b203-413a-a17a-585dc5bbad00",
+      "name": "Microsoft SQL",
+      "credentials": {
+        "microsoftSql": {
+          "id": "oBrQcLEx95uVXk5o",
+          "name": "Microsoft SQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Nome do item: {{ $json['Nome do item'] }}\n\nNCM informado do item: {{ $json['NCM do item '] }}",
+        "options": {
+          "systemMessage": "Você é um agente de IA responsável APENAS por validar se um código NCM é compatível com o nome de um produto.\n\nVocê SEMPRE receberá como entrada:\n- Um nome de produto (descrição textual)\n- Um código NCM informado pelo usuário\n\nSua tarefa é:\n- Analisar o nome do produto\n- Analisar o código NCM informado\n- Verificar se o código NCM é compatível com o tipo de produto descrito\n- Considerar a classificação NCM em nível conceitual (capítulo, posição e subposição)\n- Ignorar diferenças irrelevantes de escrita, plural, gênero ou pequenas variações do nome do produto\n\nREGRAS IMPORTANTES:\n- NÃO invente códigos NCM\n- NÃO sugira novos códigos\n- NÃO faça cálculos\n- NÃO faça buscas externas\n- NÃO valide por similaridade vaga\n- Se houver dúvida razoável ou ambiguidade, considere como incompatível\n\nCRITÉRIO DE DECISÃO:\n- Se o NCM for claramente compatível com o produto descrito, considere como VERDADEIRO\n- Se o NCM não corresponder ao tipo de produto, considere como FALSO\n- Se a descrição do produto for genérica demais para validar o NCM, considere como FALSO\n\nREGRAS DE SAÍDA (obrigatórias):\n- Responda EXATAMENTE com uma das opções abaixo:\n\nCORRETO\nINCORRETO\n\n- Não escreva explicações\n- Não escreva texto adicional\n- Não use pontuação\n- Não inclua quebras de linha no início ou no fim"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "93af3567-fb67-47d1-b499-83f4dabc48a3",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {
+          "temperature": 0.4
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        80,
+        208
+      ],
+      "id": "2b4d10cd-157a-4dab-8db0-56bb13d3b464",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "jbgPsIgjGxT5o9y2",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "099cd04c-e7f2-46a9-b076-18768c4a707f",
+              "leftValue": "={{ $json.output }}",
+              "rightValue": "VERDADEIRO",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        592,
+        0
+      ],
+      "id": "844567ba-7351-440e-8e60-9694be68c7d5",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1️⃣ Remove itens sem código\nconst itensValidos = items.filter(\n  item => item.json['Codigo do item']\n);\n\n// Segurança: se não houver nenhum código válido\nif (itensValidos.length === 0) {\n  return [{\n    json: { erro: \"SEM_CODIGO_VALIDO\" }\n  }];\n}\n\n// 2️⃣ Pega o ÚLTIMO item da planilha\nconst ultimoItem = itensValidos[itensValidos.length - 1];\nconst ultimoCodigo = ultimoItem.json['Codigo do item'];\n\n// 3️⃣ Extrai letras e números\nconst match = ultimoCodigo.match(/^([A-Za-z]+)(\\d+)$/);\n\nif (!match) {\n  ultimoItem.json.erro = \"FORMATO_INVALIDO\";\n  return itensValidos;\n}\n\nconst prefixo = match[1];\nconst numeroAtual = parseInt(match[2], 10);\n\n// 4️⃣ Incrementa o número\nconst novoNumero = numeroAtual + 1;\n\n// 5️⃣ Mantém zeros à esquerda\nconst tamanhoNumero = match[2].length;\nconst novoNumeroFormatado = String(novoNumero).padStart(tamanhoNumero, '0');\n\n// 6️⃣ Novo código\nconst novoCodigo = `${prefixo}${novoNumeroFormatado}`;\n\n// 7️⃣ Salva no ÚLTIMO item\nultimoItem.json.novo_codigo = novoCodigo;\n\n// 8️⃣ Retorna APENAS o último item (evita apagar outros)\nreturn [ultimoItem];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1056,
+        128
+      ],
+      "id": "db184aae-9849-4ba2-ac53-4cb63fbff28e",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1ObEq2p4AAEI64GsxcwJlISjDLElY3Y4oaXVSVc5zqa0",
+          "mode": "list",
+          "cachedResultName": "Planilha de cadastros",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ObEq2p4AAEI64GsxcwJlISjDLElY3Y4oaXVSVc5zqa0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "cadastros",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ObEq2p4AAEI64GsxcwJlISjDLElY3Y4oaXVSVc5zqa0/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        832,
+        128
+      ],
+      "id": "3edabd3c-978d-46c6-9f33-c5e1cff146ec",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "8kdqwiZxQAl0uvOH",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "formTitle": "Cadastro de itens ",
+        "formDescription": "dsa",
+        "formFields": {
+          "values": [
+            {
+              "fieldName": "Nome do item",
+              "fieldLabel": "asd",
+              "fieldType": "textarea",
+              "requiredField": true
+            },
+            {
+              "fieldName": "NCM do item ",
+              "fieldLabel": "sad",
+              "fieldType": "number",
+              "requiredField": true
+            },
+            {
+              "fieldName": "E-mail corporativo",
+              "fieldLabel": "asd",
+              "fieldType": "email",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.4,
+      "position": [
+        -176,
+        0
+      ],
+      "id": "ca9ae21e-5b9f-4307-99ee-dc16f96311a5",
+      "name": "On form submission",
+      "webhookId": "05f178a1-668d-4cf3-b478-9e70f7ecd38d"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT item_descricao from CADASTRO_ITEM_FISCAL"
+      },
+      "type": "n8n-nodes-base.microsoftSql",
+      "typeVersion": 1.1,
+      "position": [
+        480,
+        -352
+      ],
+      "id": "ccfe12cc-f4fc-4469-b22a-3a9f616a0046",
+      "name": "Microsoft SQL1",
+      "credentials": {
+        "microsoftSql": {
+          "id": "oBrQcLEx95uVXk5o",
+          "name": "Microsoft SQL account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        288,
+        -352
+      ],
+      "id": "90aa6d17-8183-4e32-b257-4ef7e2c7867c",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "fromEmail": "=joaopedro.mlima9@gmail.com",
+        "toEmail": "={{ $('On form submission').item.json['E-mail corporativo'] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1904,
+        128
+      ],
+      "id": "a3186b3a-3e1a-47e7-aad8-2a9a43cc5018",
+      "name": "Send email",
+      "webhookId": "3db76d21-cdee-4c23-acf9-f6bc98721ba5",
+      "credentials": {
+        "smtp": {
+          "id": "7D2PivkDrjZCeoFl",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3934ef80-1aa1-4980-bc90-0c4f3ba5f770",
+              "name": "Nome do item",
+              "value": "={{ $json['Nome do item'].toString() }}",
+              "type": "string"
+            },
+            {
+              "id": "4aae4cc5-c4e4-4329-9882-e86270734099",
+              "name": "NCM do item ",
+              "value": "={{ $json['NCM do item '].toString() }}",
+              "type": "string"
+            },
+            {
+              "id": "1b4118d0-9d73-409d-9344-329df8dc8001",
+              "name": "E-mail corporativo",
+              "value": "={{ $json['E-mail corporativo'].toString() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        32,
+        0
+      ],
+      "id": "eeb84bae-9a41-4d35-8f11-9a9a6e5c93d7",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "86922936-95e1-472b-ab6c-2535382450ce",
+              "name": "Codigo do item",
+              "value": "={{ $json.novo_codigo.toString() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1264,
+        128
+      ],
+      "id": "7de26b95-a321-4c3d-ae99-0acae50fd411",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1ObEq2p4AAEI64GsxcwJlISjDLElY3Y4oaXVSVc5zqa0",
+          "mode": "list",
+          "cachedResultName": "Planilha de cadastros",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ObEq2p4AAEI64GsxcwJlISjDLElY3Y4oaXVSVc5zqa0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "cadastros",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ObEq2p4AAEI64GsxcwJlISjDLElY3Y4oaXVSVc5zqa0/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Codigo do item": "={{ $('Edit Fields').item.json['Codigo do item'] }}",
+            "Desc do item": "={{ $('Edit Fields1').item.json['Nome do item'] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Codigo do item",
+              "displayName": "Codigo do item",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Desc do item",
+              "displayName": "Desc do item",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1664,
+        128
+      ],
+      "id": "bc502d02-5452-40a6-83bc-38e2d7e4878c",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "8kdqwiZxQAl0uvOH",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Microsoft SQL": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Microsoft SQL1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Microsoft SQL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Send email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "d13444dd-6c68-4738-ae65-300267ddd479",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a9dfd0acbb8262042acf20bd8e87246f186841e2cce4fb92bf2575b90748f88c"
+  },
+  "id": "QUxh8Zd9DwsJpG2KBa8Pb",
+  "tags": []
+}
