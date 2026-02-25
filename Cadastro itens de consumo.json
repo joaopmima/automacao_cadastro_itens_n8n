@@ -19,7 +19,8 @@
           "id": "8rguz0R8o0fp0CrE",
           "name": "SQL IB"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -78,7 +79,7 @@
     },
     {
       "parameters": {
-        "formTitle": "Cadastro de itens ",
+        "formTitle": "Cadastro de itens",
         "formDescription": "=Para realizar o cadastro de um item, é obrigatório informar corretamente os dados abaixo.\n\n<br><br>Selecione qual banco de dados o item deverá ser cadastrado.\n<br>Informe a descrição do item exatamente conforme consta na nota fiscal.\n<br>Informe o NCM conforme apresentado na nota fiscal.\n<br>Informe o código tributário correspondente, podendo ser CST, O/CST ou CST/CSOSN, de acordo com o tipo da nota fiscal (estes são alguns exemplos possíveis).\n<br>Informe o e-mail corporativo para o envio e acompanhamento do cadastro.\n\n<br><br>O correto preenchimento dessas informações é essencial para garantir o cadastro correto do item no sistema.",
         "formFields": {
           "values": [
@@ -133,7 +134,7 @@
                     "option": "Visual Merchandising"
                   },
                   {
-                    "option": "Eventos"
+                    "option": "Gente & Gestão"
                   },
                   {
                     "option": "T.I"
@@ -162,6 +163,7 @@
         "options": {
           "appendAttribution": false,
           "buttonLabel": "Enviar",
+          "path": "cadastro_de_itens",
           "respondWithOptions": {
             "values": {
               "formSubmittedText": "O cadastro será enviado para o e-mail corporativo informado."
@@ -516,7 +518,8 @@
           "id": "OkN54iV2AMtgjIYk",
           "name": "SQL TH"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -689,7 +692,8 @@
           "id": "pDQfRZo44eKZeHAY",
           "name": "SQL SL"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -2127,24 +2131,75 @@
       ],
       "id": "993f8ab6-afbf-4192-90c1-a2ddbdefdab7",
       "name": "Sticky Note10"
-    }
-  ],
-  "pinData": {
-    "On form submission": [
-      {
-        "json": {
-          "Banco de dados": "INBRANDS",
-          "Nome do item": "REGATA FOIL",
-          "NCM do item ": "61061000",
-          "CST": "0",
-          "Setor da pessoa ": "Marketing",
-          "E-mail corporativo": "joaopedro.mlima9@gmail.com",
-          "submittedAt": "2026-02-11T19:04:49.900-03:00",
-          "formMode": "test"
+    },
+    {
+      "parameters": {
+        "fromEmail": "joaopedro.mlima9@gmail.com",
+        "toEmail": "joaopedro.mlima9@gmail.com",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        608,
+        704
+      ],
+      "id": "c27c8c45-5021-438b-a7f0-1d1223474140",
+      "name": "Send email12",
+      "webhookId": "44c31195-78cb-469e-ae08-d546397bd74f",
+      "credentials": {
+        "smtp": {
+          "id": "cAL0FtZL8kQWPeYe",
+          "name": "Credencial E-mail"
         }
       }
-    ]
-  },
+    },
+    {
+      "parameters": {
+        "fromEmail": "joaopedro.mlima9@gmail.com",
+        "toEmail": "joaopedro.mlima9@gmail.com",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        608,
+        1360
+      ],
+      "id": "af7bd57e-c84e-443e-af1f-321731f93cfc",
+      "name": "Send email13",
+      "webhookId": "4dc742ac-0f94-453f-b4ea-87bcbf09dc2c",
+      "credentials": {
+        "smtp": {
+          "id": "cAL0FtZL8kQWPeYe",
+          "name": "Credencial E-mail"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "joaopedro.mlima9@gmail.com",
+        "toEmail": "joaopedro.mlima9@gmail.com",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        592,
+        2064
+      ],
+      "id": "2c959d0a-6bb3-4d6b-8971-4c8d408f7db6",
+      "name": "Send email14",
+      "webhookId": "b0d9cf2e-7a8d-4046-903e-ae62075b4c2e",
+      "credentials": {
+        "smtp": {
+          "id": "cAL0FtZL8kQWPeYe",
+          "name": "Credencial E-mail"
+        }
+      }
+    }
+  ],
+  "pinData": {},
   "connections": {
     "Google Gemini Chat Model": {
       "ai_languageModel": [
@@ -2180,6 +2235,13 @@
         [
           {
             "node": "Planilha para adicionar o item cadastrado IB",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send email12",
             "type": "main",
             "index": 0
           }
@@ -2314,6 +2376,13 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "Send email13",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
@@ -2384,6 +2453,13 @@
         [
           {
             "node": "Planilha para adicionar o item cadastrado SL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send email14",
             "type": "main",
             "index": 0
           }
@@ -2800,7 +2876,7 @@
     "executionOrder": "v1",
     "availableInMCP": false
   },
-  "versionId": "9b2128c7-4205-4d4d-8f57-0a780195cfc4",
+  "versionId": "62ac4367-eff6-4ecf-bb4c-16d59ec729a6",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "c9ac0336281178410ae1caf9c0c4bc6510509f0f05a469f30c634bd9ecc77f35"
