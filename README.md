@@ -39,24 +39,25 @@ O sistema realiza:
 
 ## Arquitetura do Fluxo
 
+
 Email Trigger
-↓
+    ↓
 Verificação de Anexo
-↓
+    ↓
 Extração de Texto do PDF
-↓
+    ↓
 IA 1 - Extração Estruturada
-↓
+    ↓
 Validação de NCM
-↓
+    ↓
 Consulta Código Padrão (Planilha)
-↓
+    ↓
 IA 2 - Classificação Contábil
-↓
+    ↓
 Inserção no Banco de Dados
-↓
+    ↓
 Registro em Planilha
-↓
+    ↓
 Envio de E-mail com Resumo
 
 ---
